@@ -44,7 +44,9 @@ tests.test_folder_path(cifar10_dataset_folder_path)
 
 
 # ## Explore the Data
-# The dataset is broken into batches to prevent your machine from running out of memory.  The CIFAR-10 dataset consists of 5 batches, named `data_batch_1`, `data_batch_2`, etc.. Each batch contains the labels and images that are one of the following:
+# The dataset is broken into batches to prevent your machine from running out of memory.  
+# The CIFAR-10 dataset consists of 5 batches, named `data_batch_1`, `data_batch_2`, etc.. 
+# Each batch contains the labels and images that are one of the following:
 # * airplane
 # * automobile
 # * bird
@@ -315,6 +317,8 @@ def fully_conn(x_tensor, num_outputs):
     : return: A 2-D tensor where the second dimension is num_outputs.
     """
     # TODO: Implement Function
+    x_shape = x_tensor.get_shape().as_list()
+    w_shape = [x_shape[-1], num_outputs]
     W = tf.Variable(tf.random_normal(w_shape))
     b = tf.Variable(tf.random_normal([num_outputs]))
     fc = tf.add(tf.matmul(x_tensor,W), b)
@@ -344,6 +348,8 @@ def output(x_tensor, num_outputs):
     : return: A 2-D tensor where the second dimension is num_outputs.
     """
     # TODO: Implement Function
+    x_shape = x_tensor.get_shape().as_list()
+    w_shape = [x_shape[-1], num_outputs]
     W = tf.Variable(tf.random_normal(w_shape))
     b = tf.Variable(tf.random_normal([num_outputs]))
     output = tf.add(tf.matmul(x_tensor,W), b)
@@ -379,27 +385,47 @@ def conv_net(x, keep_prob):
     #    Play around with different number of outputs, kernel size and stride
     # Function Definition from Above:
     #    conv2d_maxpool(x_tensor, conv_num_outputs, conv_ksize, conv_strides, pool_ksize, pool_strides)
+    conv_layer_num_outputs = [40, 20]
+    conv_layer_ksizes = [(5,5), (3,3)]
+    conv_layer_kstrides = [(1,1), (1,1)]
+    conv_layer_pool_ksizes =[(2,2),(2,2)]
+    conv_layer_pool_strides = [(1,1),(1,1)]
+    num_conv_layers = len(conv_layer_num_outputs)
+    conv = x
+    for i in range(num_conv_layers):
+      conv = conv2d_maxpool(conv,conv_layer_num_outputs[i],conv_layer_ksizes[i],
+                            conv_layer_kstrides[i],conv_layer_pool_ksizes[i],conv_layer_pool_strides[i])
+      
+    
     
 
     # TODO: Apply a Flatten Layer
     # Function Definition from Above:
     #   flatten(x_tensor)
+    fc = flatten(conv)
     
 
     # TODO: Apply 1, 2, or 3 Fully Connected Layers
     #    Play around with different number of outputs
     # Function Definition from Above:
     #   fully_conn(x_tensor, num_outputs)
+    fc_num_outputs = [20]
+    num_fc_layers = len(fc_num_outputs)
+    for i in range(num_fc_layers):
+      fc = fully_conn(fc,fc_num_outputs[i])
     
     
     # TODO: Apply an Output Layer
     #    Set this to the number of classes
     # Function Definition from Above:
     #   output(x_tensor, num_outputs)
+    num_outputs = 10
+    fc = tf.nn.dropout(fc,keep_prob)
+    out = output(fc,num_outputs)
     
     
     # TODO: return output
-    return None
+    return out
 
 
 """
@@ -458,7 +484,8 @@ def train_neural_network(session, optimizer, keep_probability, feature_batch, la
     : label_batch: Batch of Numpy label data
     """
     # TODO: Implement Function
-    pass
+    session.run(optimizer,feed_dict = {x:feature_batch,
+                                       y:label_batch,keep_prob:keep_probability})
 
 
 """
@@ -482,13 +509,16 @@ def print_stats(session, feature_batch, label_batch, cost, accuracy):
     : accuracy: TensorFlow accuracy function
     """
     # TODO: Implement Function
-    pass
+    loss = session.run(cost,feed_dict = {x:feature_batch,y:label_batch,keep_prob : 1.0})
+    valid_acc = session.run(accuracy,feed_dict = {x:feature_batch,y:label_batch, keep_prob : 1.0})
+    print('Loss: {:>10.4f} Validation Accuracy: {:.6f}'.format(loss,valid_acc))
 
 
 # ### Hyperparameters
 # Tune the following parameters:
 # * Set `epochs` to the number of iterations until the network stops learning or start overfitting
-# * Set `batch_size` to the highest number that your machine has memory for.  Most people set them to common sizes of memory:
+# * Set `batch_size` to the highest number that your machine has memory for. 
+# Most people set them to common sizes of memory:
 #  * 64
 #  * 128
 #  * 256
@@ -498,9 +528,9 @@ def print_stats(session, feature_batch, label_batch, cost, accuracy):
 # In[ ]:
 
 # TODO: Tune Parameters
-epochs = None
-batch_size = None
-keep_probability = None
+epochs = 20
+batch_size = 64
+keep_probability = 0.5
 
 
 # ### Train on a Single CIFAR-10 Batch
